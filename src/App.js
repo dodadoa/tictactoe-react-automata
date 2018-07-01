@@ -7,25 +7,17 @@ const statechart = {
   states: {
     new_game: {
       on: {
-        START: 'put_o',
+        START: 'put_mark',
       },
       onEntry: 'newGame',
     },
-    put_o: {
+    put_mark: {
       on: {
         IS_WIN: 'win',
-        PLAY_NEXT: 'put_x',
+        PLAY_NEXT: 'put_mark',
         IS_DRAW: 'end_game',
       },
-      onEntry: 'oTurn',
-    },
-    put_x: {
-      on: {
-        IS_WIN: 'win',
-        PLAY_NEXT: 'put_o',
-        IS_DRAW: 'end_game',
-      },
-      onEntry: 'xTurn',
+      onEntry: 'putMark',
     },
     end_game: {
       on: {
@@ -51,16 +43,12 @@ class App extends Component {
         ['', '', ''],
         ['' ,'' ,'']
       ],
-      prevPutPosition: {
-        row: null,
-        cell:  null,
-      }
+      winner: '',
     }
   }
 
   handleSquareBoxClick = (rowIndex, cellIndex) => {
-    if(this.state.prevPutPosition.row === rowIndex
-      && this.state.prevPutPosition.cell === cellIndex) return
+    if(this.props.rowIndex === rowIndex && this.props.cellIndex === cellIndex) return
     if(this.props.machineState.value === 'win') return
     if(this.props.machineState.value === 'new_game') {
       return this.props.transition('START', {
@@ -71,9 +59,7 @@ class App extends Component {
     const nextState = this.state.gameState.map((row, ri) => {
       return row.map((cell, ci) => {
         return rowIndex === ri && cellIndex === ci
-          ? this.props.machineState.value === 'put_x'
-            ? 'o'
-            : 'x'
+          ? this.props.whoturn
           : cell
       })
     })
@@ -81,13 +67,12 @@ class App extends Component {
       ? this.props.transition('IS_WIN', {
         rowIndex,
         cellIndex,
-        winner: this.props.machineState.value === 'put_x'
-          ? 'o'
-          : 'x'
+        whoturn: this.props.whoturn === 'x' ? 'o' : 'x'
       })
       : this.props.transition('PLAY_NEXT', {
         rowIndex,
-        cellIndex
+        cellIndex,
+        whoturn: this.props.whoturn === 'x' ? 'o' : 'x',
       })
   }
 
@@ -95,41 +80,28 @@ class App extends Component {
     this.setState((prevState, props) => ({
       gameState: prevState.gameState.map((row, ri) => {
         return row.map((cell, ci) => {
-          return props.rowIndex === ri && props.cellIndex === ci ? props.winner : cell
+          return props.rowIndex === ri && props.cellIndex === ci
+            ? props.whoturn === 'x'
+              ? 'o'
+              : 'x'
+            : cell
         })
       }),
-      prevPutPosition: {
-        row: props.rowIndex,
-        cell: props.cellIndex,
-      }
+      winner: props.whoturn === 'x' ? 'o' : 'x',
     }))
   }
 
-  xTurn(){
+  putMark(){
     this.setState((prevState, props) => ({
       gameState: prevState.gameState.map((row, ri) => {
         return row.map((cell, ci) => {
-          return props.rowIndex === ri && props.cellIndex === ci ? 'x' : cell
+          return props.rowIndex === ri && props.cellIndex === ci
+            ? props.whoturn === 'x'
+              ? 'o'
+              : 'x'
+            : cell
         })
       }),
-      prevPutPosition: {
-        row: props.rowIndex,
-        cell: props.cellIndex,
-      }
-    }))
-  }
-
-  oTurn(){
-    this.setState((prevState, props) => ({
-      gameState: prevState.gameState.map((row, ri) => {
-        return row.map((cell, ci) => {
-          return props.rowIndex === ri && props.cellIndex === ci ? 'o' : cell
-        })
-      }),
-      prevPutPosition: {
-        row: props.rowIndex,
-        cell: props.cellIndex,
-      }
     }))
   }
 
@@ -137,15 +109,37 @@ class App extends Component {
     console.log(ps, e)
   }
 
+  checkIfGameEnd = (gameState) => {
+    const flattenGameState = [
+      ...gameState[0],
+      ...gameState[1],
+      ...gameState[2]
+    ]
+
+    return gameState.every((state) => state === 'o' || state === 'x')
+  }
+
   checkIfOneWin = (gameState) => {
-    const isWinHorizontal = gameState
-      .map(row => {
-        return row.every(cell => cell === 'x' || cell === 'o')
-      })
-      .some(row => {
-        return row
-      })
-    return isWinHorizontal
+    const isWinSituation = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ]
+    const flattenGameState = [
+      ...gameState[0],
+      ...gameState[1],
+      ...gameState[2],
+    ]
+
+    return isWinSituation.some((winSituation) => {
+      return winSituation.every((condition) => flattenGameState[condition] === 'o')
+        || winSituation.every((condition) => flattenGameState[condition] === 'x')
+    })
   }
 
   renderSquareBox = (rowIndex) => {
@@ -192,7 +186,7 @@ class App extends Component {
     return (
       <App>
         {this.renderRow()}
-        <p> { this.props.winner ? this.props.winner + " win!" : "" } </p>
+        <p> { this.state.winner ? this.state.winner + " win!" : "" } </p>
       </App>
     )
   }
@@ -201,7 +195,7 @@ class App extends Component {
 App.defaultProps = {
   rowIndex: null,
   cellIndex: null,
-  winner: '',
+  whoturn: 'o'
 }
 
 export default withStatechart(statechart, {
