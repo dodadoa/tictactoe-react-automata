@@ -63,12 +63,21 @@ class App extends Component {
           : cell
       })
     })
-    this.checkIfOneWin(nextState)
-      ? this.props.transition('IS_WIN', {
+
+    if (this.checkIfGameEnd(nextState)) {
+      return this.props.transition('IS_DRAW', {
         rowIndex,
         cellIndex,
         whoturn: this.props.whoturn === 'x' ? 'o' : 'x'
       })
+    }
+
+    this.checkIfOneWin(nextState)
+      ? this.props.transition('IS_WIN', {
+          rowIndex,
+          cellIndex,
+          whoturn: this.props.whoturn === 'x' ? 'o' : 'x'
+        })
       : this.props.transition('PLAY_NEXT', {
         rowIndex,
         cellIndex,
@@ -88,6 +97,21 @@ class App extends Component {
         })
       }),
       winner: props.whoturn === 'x' ? 'o' : 'x',
+    }))
+  }
+
+  endGame() {
+    this.setState((prevState, props) => ({
+      gameState: prevState.gameState.map((row, ri) => {
+        return row.map((cell, ci) => {
+          return props.rowIndex === ri && props.cellIndex === ci
+            ? props.whoturn === 'x'
+              ? 'o'
+              : 'x'
+            : cell
+        })
+      }),
+      winner: 'game is draw! no one',
     }))
   }
 
@@ -115,8 +139,7 @@ class App extends Component {
       ...gameState[1],
       ...gameState[2]
     ]
-
-    return gameState.every((state) => state === 'o' || state === 'x')
+    return flattenGameState.every((state) => state !== '')
   }
 
   checkIfOneWin = (gameState) => {
