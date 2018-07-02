@@ -129,10 +129,6 @@ class App extends Component {
     }))
   }
 
-  componentDidTransition(ps, e){
-    console.log(ps, e)
-  }
-
   checkIfGameEnd = (gameState) => {
     const flattenGameState = [
       ...gameState[0],
