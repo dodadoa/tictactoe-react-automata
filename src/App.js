@@ -13,7 +13,7 @@ const statechart = {
     },
     put_mark: {
       on: {
-        IS_WIN: 'win',
+        IS_WIN: 'end_game',
         PLAY_NEXT: 'put_mark',
         IS_DRAW: 'end_game',
       },
@@ -25,12 +25,6 @@ const statechart = {
       },
       onEntry: 'endGame',
     },
-    win: {
-      on: {
-        NEW: 'new_game'
-      },
-      onEntry: 'winGame',
-    }
   }
 }
 
@@ -43,7 +37,7 @@ class App extends Component {
         ['', '', ''],
         ['' ,'' ,'']
       ],
-      winner: '',
+      gameMessage: '',
     }
   }
 
@@ -64,40 +58,29 @@ class App extends Component {
       })
     })
 
+    if(this.checkIfOneWin(nextState)){
+      return this.props.transition('IS_WIN', {
+        rowIndex,
+        cellIndex,
+        whoturn: this.props.whoturn === 'x' ? 'o' : 'x',
+        gameMessage: this.props.whoturn === 'x' ? 'x win!' : 'o win!',
+      })
+    }
+
     if (this.checkIfGameEnd(nextState)) {
       return this.props.transition('IS_DRAW', {
         rowIndex,
         cellIndex,
-        whoturn: this.props.whoturn === 'x' ? 'o' : 'x'
+        whoturn: this.props.whoturn === 'x' ? 'o' : 'x',
+        gameMessage: 'game draw!',
       })
     }
 
-    this.checkIfOneWin(nextState)
-      ? this.props.transition('IS_WIN', {
-          rowIndex,
-          cellIndex,
-          whoturn: this.props.whoturn === 'x' ? 'o' : 'x'
-        })
-      : this.props.transition('PLAY_NEXT', {
-        rowIndex,
-        cellIndex,
-        whoturn: this.props.whoturn === 'x' ? 'o' : 'x',
-      })
-  }
-
-  winGame(){
-    this.setState((prevState, props) => ({
-      gameState: prevState.gameState.map((row, ri) => {
-        return row.map((cell, ci) => {
-          return props.rowIndex === ri && props.cellIndex === ci
-            ? props.whoturn === 'x'
-              ? 'o'
-              : 'x'
-            : cell
-        })
-      }),
-      winner: props.whoturn === 'x' ? 'o' : 'x',
-    }))
+    this.props.transition('PLAY_NEXT', {
+      rowIndex,
+      cellIndex,
+      whoturn: this.props.whoturn === 'x' ? 'o' : 'x',
+    })
   }
 
   endGame() {
@@ -111,7 +94,7 @@ class App extends Component {
             : cell
         })
       }),
-      winner: 'game is draw! no one',
+      gameMessage: props.gameMessage,
     }))
   }
 
@@ -205,7 +188,7 @@ class App extends Component {
     return (
       <App>
         {this.renderRow()}
-        <p> { this.state.winner ? this.state.winner + " win!" : "" } </p>
+        <p> { this.state.gameMessage ? this.state.gameMessage : "" } </p>
       </App>
     )
   }
@@ -214,7 +197,8 @@ class App extends Component {
 App.defaultProps = {
   rowIndex: null,
   cellIndex: null,
-  whoturn: 'o'
+  whoturn: 'o',
+  gameMessage: '',
 }
 
 export default withStatechart(statechart, {
