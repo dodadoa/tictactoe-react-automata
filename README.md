@@ -1,2 +1,2 @@
-This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
-
+# Tictactoe React Automata
+My attempt to learn react-automata via implementing with React
